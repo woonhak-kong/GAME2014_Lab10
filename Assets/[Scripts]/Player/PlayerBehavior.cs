@@ -33,6 +33,10 @@ public class PlayerBehavior : MonoBehaviour
     public Animator animator;
     public PlayerAnimationState playerAnimationState;
 
+    [Header("Dust Trail")]
+    public ParticleSystem dustTrail;
+    public Color dustTrailColor;
+
     private Rigidbody2D rigidbody;
     private SoundManager soundManager;
 
@@ -46,6 +50,7 @@ public class PlayerBehavior : MonoBehaviour
         lifeCounter = FindObjectOfType<LifeCounterController>();
         deathPlane = FindObjectOfType<DeathPlaneController>();
         soundManager = FindObjectOfType<SoundManager>();
+        dustTrail = GetComponentInChildren<ParticleSystem>();
     }
 
     private void Update()
@@ -86,7 +91,9 @@ public class PlayerBehavior : MonoBehaviour
 
         float x = Input.GetAxisRaw("Horizontal") + joysticHorizontal * horizontalSensitivity;
         if (x != 0.0f)
+        {
             x = x > 0.0f ? 1.0f : -1.0f;
+        }
         rigidbody.AddForce(Vector2.right * x * horizontalForce * (isGrounded ? 1 : airFactor));
         Vector2 newVelocity = new Vector2(Mathf.Clamp(rigidbody.velocity.x, -horizontalSpeed, horizontalSpeed), rigidbody.velocity.y);
         rigidbody.velocity = newVelocity;
@@ -95,10 +102,21 @@ public class PlayerBehavior : MonoBehaviour
 
         ChangeAnimation(PlayerAnimationState.RUN);
 
+        if (isGrounded)
+        {
+            CreateDustrail();
+        }
+
         if ( isGrounded && x == 0.0f)
         {
             ChangeAnimation(PlayerAnimationState.IDLE);
         }
+    }
+
+    private void CreateDustrail()
+    {
+        dustTrail.GetComponent<Renderer>().material.SetColor("_Color", dustTrailColor);
+        dustTrail.Play();
     }
 
     private void AirCheck()
