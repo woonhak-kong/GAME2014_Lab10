@@ -1,3 +1,4 @@
+using Cinemachine;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -37,6 +38,14 @@ public class PlayerBehavior : MonoBehaviour
     public ParticleSystem dustTrail;
     public Color dustTrailColor;
 
+    [Header("Screen Shake Properties")]
+    public CinemachineVirtualCamera virtualCamera;
+    public CinemachineBasicMultiChannelPerlin perlin;
+    public float shakeIntensity;
+    public float shakeDuration;
+    public float shakeTimer;
+    public bool isCameraShaking;
+
     private Rigidbody2D rigidbody;
     private SoundManager soundManager;
 
@@ -51,6 +60,12 @@ public class PlayerBehavior : MonoBehaviour
         deathPlane = FindObjectOfType<DeathPlaneController>();
         soundManager = FindObjectOfType<SoundManager>();
         dustTrail = GetComponentInChildren<ParticleSystem>();
+
+
+        isCameraShaking = false;
+        shakeTimer = shakeDuration;
+        virtualCamera = FindObjectOfType<CinemachineVirtualCamera>();
+        perlin = virtualCamera.GetCinemachineComponent<CinemachineBasicMultiChannelPerlin>();
     }
 
     private void Update()
@@ -83,6 +98,18 @@ public class PlayerBehavior : MonoBehaviour
         Move();
         Jump();
         AirCheck();
+
+        // Camera Shake Control
+        if (isCameraShaking)
+        {
+            shakeTimer -= Time.fixedDeltaTime;
+            if (shakeTimer <= 0.0f)
+            {
+                perlin.m_AmplitudeGain = 0.0f;
+                shakeTimer = shakeDuration;
+                isCameraShaking = false;
+            }
+        }
     }
 
     private void Move()
@@ -117,6 +144,12 @@ public class PlayerBehavior : MonoBehaviour
     {
         dustTrail.GetComponent<Renderer>().material.SetColor("_Color", dustTrailColor);
         dustTrail.Play();
+    }
+
+    private void ShakeCamera()
+    {
+        perlin.m_AmplitudeGain = shakeIntensity;
+        isCameraShaking= true;
     }
 
     private void AirCheck()
@@ -173,10 +206,29 @@ public class PlayerBehavior : MonoBehaviour
             if (lifeCounter.value > 0)
             {
                 soundManager.PlaySoundFX(SoundFX.HIT, Channel.HIT);
+                ShakeCamera();
                 // todo : play the "hurt" sound
             }
             // todo: updpate life value
             // todo: animation
         }
     }
+
+    private void OnTriggerEnter2D(Collider2D other)
+    {
+        Debug.Log("Trigger");
+        if (other.gameObject.CompareTag("Hazard"))
+        {
+            health.TakeDamage(30);
+            if (lifeCounter.value > 0)
+            {
+                soundManager.PlaySoundFX(SoundFX.HIT, Channel.HIT);
+                ShakeCamera();
+                // todo : play the "hurt" sound
+            }
+            // todo: updpate life value
+            // todo: animation
+        }
+    }
+  
 }
